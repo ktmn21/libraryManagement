@@ -2,28 +2,39 @@ import React, { useState, useEffect } from 'react';
 import {
   Container,
   Grid,
-  Paper,
-  Typography,
   TextField,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
+  InputAdornment,
+  IconButton,
+  Typography,
   Box,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Avatar,
+  Menu,
+  MenuItem,
   Tab,
   Tabs,
+  Paper,
 } from '@mui/material';
+import {
+  Search as SearchIcon,
+  AccountCircle as AccountCircleIcon,
+} from '@mui/icons-material';
+import BookCard from './BookCard';
 import api from '../../services/api';
 
 const UserDashboard = () => {
-  const [activeTab, setActiveTab] = useState(0);
   const [books, setBooks] = useState([]);
-  const [searchType, setSearchType] = useState('title');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState('title');
   const [userProfile, setUserProfile] = useState(null);
+  const [borrowedBooks, setBorrowedBooks] = useState([]);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
   const [editProfile, setEditProfile] = useState(false);
   const [profileData, setProfileData] = useState({
     firstname: '',
@@ -34,12 +45,14 @@ const UserDashboard = () => {
   useEffect(() => {
     fetchAvailableBooks();
     fetchUserProfile();
+    fetchBorrowedBooks();
   }, []);
 
   const fetchAvailableBooks = async () => {
     try {
       const response = await api.get('/user/available-books');
-      setBooks(response.data);
+      const sortedBooks = response.data.sort((a, b) => a.genre.localeCompare(b.genre));
+      setBooks(sortedBooks);
     } catch (error) {
       console.error('Error fetching books:', error);
     }
@@ -59,7 +72,21 @@ const UserDashboard = () => {
     }
   };
 
+  const fetchBorrowedBooks = async () => {
+    try {
+      // Assuming there's an endpoint to get user's borrowed books
+      const response = await api.get('/user/borrowed-books');
+      setBorrowedBooks(response.data);
+    } catch (error) {
+      console.error('Error fetching borrowed books:', error);
+    }
+  };
+
   const handleSearch = async () => {
+    if (!searchQuery) {
+      fetchAvailableBooks();
+      return;
+    }
     try {
       let response;
       switch (searchType) {
@@ -85,8 +112,22 @@ const UserDashboard = () => {
     try {
       await api.post(`/user/borrow/${bookId}`);
       fetchAvailableBooks();
+      fetchBorrowedBooks();
+      setSelectedBook(null);
     } catch (error) {
       console.error('Error borrowing book:', error);
+    }
+  };
+
+  const handleReturn = async (borrowedBookId) => {
+    try {
+      await api.post(`/user/return/${borrowedBookId}`);
+      setBorrowedBooks(prevBooks => 
+        prevBooks.filter(book => book.id !== borrowedBookId)
+      );
+      fetchAvailableBooks();
+    } catch (error) {
+      console.error('Error returning book:', error);
     }
   };
 
@@ -102,157 +143,158 @@ const UserDashboard = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Header with Search and Profile */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexGrow: 1, mr: 2 }}>
+          <TextField
+            select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value)}
+            sx={{ width: 120 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+            <option value="genre">Genre</option>
+          </TextField>
+          <TextField
+            fullWidth
+            placeholder={`Search by ${searchType}...`}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={handleSearch}>
+                    <SearchIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+          <Avatar>{userProfile?.firstname?.[0] || 'U'}</Avatar>
+        </IconButton>
+      </Box>
+
+      {/* Books Grid */}
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-            <Tab label="Available Books" />
-            <Tab label="Search Books" />
-            <Tab label="Profile" />
-          </Tabs>
-        </Grid>
-
-        {activeTab === 0 && (
-          <Grid item xs={12}>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Title</TableCell>
-                    <TableCell>Author</TableCell>
-                    <TableCell>Genre</TableCell>
-                    <TableCell>Stock</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {books.map((book) => (
-                    <TableRow key={book.id}>
-                      <TableCell>{book.title}</TableCell>
-                      <TableCell>{book.author}</TableCell>
-                      <TableCell>{book.genre}</TableCell>
-                      <TableCell>{book.stock}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="contained"
-                          disabled={book.stock === 0}
-                          onClick={() => handleBorrow(book.id)}
-                        >
-                          Borrow
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+        {books.map((book) => (
+          <Grid item xs={12} sm={6} md={4} key={book.id}>
+            <BookCard
+              book={book}
+              onBorrow={handleBorrow}
+            />
           </Grid>
-        )}
-
-        {activeTab === 1 && (
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    select
-                    fullWidth
-                    value={searchType}
-                    onChange={(e) => setSearchType(e.target.value)}
-                    SelectProps={{ native: true }}
-                  >
-                    <option value="title">Title</option>
-                    <option value="author">Author</option>
-                    <option value="genre">Genre</option>
-                  </TextField>
-                </Grid>
-                <Grid item xs={12} sm={7}>
-                  <TextField
-                    fullWidth
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`Search by ${searchType}...`}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={2}>
-                  <Button fullWidth variant="contained" onClick={handleSearch}>
-                    Search
-                  </Button>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-        )}
-
-        {activeTab === 2 && (
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              {!editProfile ? (
-                <>
-                  <Typography variant="h6">Profile Information</Typography>
-                  <Box sx={{ mt: 2 }}>
-                    <Typography>First Name: {userProfile?.firstname}</Typography>
-                    <Typography>Last Name: {userProfile?.lastname}</Typography>
-                    <Typography>Username: {userProfile?.username}</Typography>
-                    <Button
-                      variant="contained"
-                      sx={{ mt: 2 }}
-                      onClick={() => setEditProfile(true)}
-                    >
-                      Edit Profile
-                    </Button>
-                  </Box>
-                </>
-              ) : (
-                <>
-                  <Typography variant="h6">Edit Profile</Typography>
-                  <Box sx={{ mt: 2 }}>
-                    <TextField
-                      fullWidth
-                      label="First Name"
-                      value={profileData.firstname}
-                      onChange={(e) =>
-                        setProfileData({ ...profileData, firstname: e.target.value })
-                      }
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Last Name"
-                      value={profileData.lastname}
-                      onChange={(e) =>
-                        setProfileData({ ...profileData, lastname: e.target.value })
-                      }
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Username"
-                      value={profileData.username}
-                      onChange={(e) =>
-                        setProfileData({ ...profileData, username: e.target.value })
-                      }
-                      sx={{ mb: 2 }}
-                    />
-                    <Button
-                      variant="contained"
-                      onClick={handleUpdateProfile}
-                      sx={{ mr: 1 }}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={() => setEditProfile(false)}
-                    >
-                      Cancel
-                    </Button>
-                  </Box>
-                </>
-              )}
-            </Paper>
-          </Grid>
-        )}
+        ))}
       </Grid>
+
+      {/* Profile Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+      >
+        <MenuItem onClick={() => {
+          setShowProfile(true);
+          setAnchorEl(null);
+        }}>
+          My Profile
+        </MenuItem>
+      </Menu>
+
+      {/* Profile Dialog */}
+      <Dialog
+        open={showProfile}
+        onClose={() => setShowProfile(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          My Profile
+        </DialogTitle>
+        <DialogContent>
+          <Tabs value={editProfile ? 1 : 0}>
+            <Tab label="Profile Info" />
+            <Tab label="Borrowed Books" />
+          </Tabs>
+
+          {!editProfile ? (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="h6">Profile Information</Typography>
+              <Typography>First Name: {userProfile?.firstname}</Typography>
+              <Typography>Last Name: {userProfile?.lastname}</Typography>
+              <Typography>Username: {userProfile?.username}</Typography>
+              <Button
+                variant="contained"
+                sx={{ mt: 2 }}
+                onClick={() => setEditProfile(true)}
+              >
+                Edit Profile
+              </Button>
+            </Box>
+          ) : (
+            <Box sx={{ mt: 2 }}>
+              <TextField
+                fullWidth
+                label="First Name"
+                value={profileData.firstname}
+                onChange={(e) => setProfileData({ ...profileData, firstname: e.target.value })}
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Last Name"
+                value={profileData.lastname}
+                onChange={(e) => setProfileData({ ...profileData, lastname: e.target.value })}
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Username"
+                value={profileData.username}
+                onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
+                sx={{ mb: 2 }}
+              />
+              <Button variant="contained" onClick={handleUpdateProfile} sx={{ mr: 1 }}>
+                Save
+              </Button>
+              <Button variant="outlined" onClick={() => setEditProfile(false)}>
+                Cancel
+              </Button>
+            </Box>
+          )}
+
+          {/* Borrowed Books Section */}
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h6">Borrowed Books</Typography>
+            {borrowedBooks.map((borrowed) => (
+              <Paper key={borrowed.id} sx={{ p: 2, mt: 2 }}>
+                <Typography variant="subtitle1">{borrowed.book.title}</Typography>
+                <Typography variant="body2">Due Date: {borrowed.dueDate}</Typography>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => handleReturn(borrowed.id)}
+                  sx={{ mt: 1 }}
+                >
+                  Return Book
+                </Button>
+              </Paper>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setShowProfile(false);
+            setEditProfile(false);
+          }}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
