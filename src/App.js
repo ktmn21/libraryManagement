@@ -9,6 +9,7 @@ import UserDashboard from './components/user/UserDashboard';
 import UserProfile from './components/user/UserProfile';
 import AdminDashboard from './components/admin/AdminDashboard';
 import PrivateRoute from './components/common/PrivateRoute';
+import AdminUserProfile from './components/admin/AdminUserProfile';
 
 function App() {
   return (
@@ -34,6 +35,14 @@ function App() {
               <AdminDashboard />
             </PrivateRoute>
           } />
+          <Route 
+            path="/admin/user/:userId" 
+            element={
+              <PrivateRoute role="ADMIN">
+                <AdminUserProfile />
+              </PrivateRoute>
+            } 
+          />
         </Routes>
       </Router>
     </AuthProvider>

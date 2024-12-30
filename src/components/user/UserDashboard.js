@@ -18,6 +18,8 @@ import {
   Tab,
   Tabs,
   Paper,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -41,6 +43,11 @@ const UserDashboard = () => {
     firstname: '',
     lastname: '',
     username: '',
+  });
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
   });
   const navigate = useNavigate();
 
@@ -114,10 +121,17 @@ const UserDashboard = () => {
     try {
       await api.post(`/user/borrow/${bookId}`);
       fetchAvailableBooks();
-      fetchBorrowedBooks();
-      setSelectedBook(null);
+      setNotification({
+        open: true,
+        message: 'Book borrowed successfully!',
+        severity: 'success'
+      });
     } catch (error) {
-      console.error('Error borrowing book:', error);
+      setNotification({
+        open: true,
+        message: error.response?.data?.message || 'Error borrowing book',
+        severity: 'error'
+      });
     }
   };
 
@@ -141,6 +155,10 @@ const UserDashboard = () => {
     } catch (error) {
       console.error('Error updating profile:', error);
     }
+  };
+
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
   };
 
   return (
@@ -195,6 +213,21 @@ const UserDashboard = () => {
           </Grid>
         ))}
       </Grid>
+
+      <Snackbar 
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseNotification} 
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

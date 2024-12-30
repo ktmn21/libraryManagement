@@ -15,6 +15,8 @@ import {
   TableRow,
   Tabs,
   Tab,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
@@ -28,6 +30,11 @@ const UserProfile = () => {
     firstname: '',
     lastname: '',
     username: '',
+  });
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
   });
   const navigate = useNavigate();
 
@@ -69,12 +76,25 @@ const UserProfile = () => {
     }
   };
 
+  const handleCloseNotification = () => {
+    setNotification({ ...notification, open: false });
+  };
+
   const handleReturn = async (borrowedBookId) => {
     try {
       await api.post(`/user/return/${borrowedBookId}`);
       fetchBorrowedBooks();
+      setNotification({
+        open: true,
+        message: 'Book returned successfully!',
+        severity: 'success'
+      });
     } catch (error) {
-      console.error('Error returning book:', error);
+      setNotification({
+        open: true,
+        message: error.response?.data?.message || 'Error returning book',
+        severity: 'error'
+      });
     }
   };
 
@@ -229,6 +249,21 @@ const UserProfile = () => {
           </Grid>
         )}
       </Grid>
+
+      <Snackbar 
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseNotification} 
+          severity={notification.severity}
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

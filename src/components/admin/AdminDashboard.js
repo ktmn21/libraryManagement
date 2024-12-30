@@ -21,6 +21,7 @@ import {
   DialogActions,
 } from '@mui/material';
 import api from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -35,6 +36,7 @@ const AdminDashboard = () => {
     description: '',
     stock: 0,
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsers();
@@ -145,6 +147,14 @@ const AdminDashboard = () => {
                       <TableCell>{user.username}</TableCell>
                       <TableCell>{user.role}</TableCell>
                       <TableCell>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => navigate(`/admin/user/${user.id}`)}
+                          sx={{ mr: 1 }}
+                        >
+                          View Profile
+                        </Button>
                         <Button
                           variant="contained"
                           color="error"
