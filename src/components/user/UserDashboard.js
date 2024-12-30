@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material';
 import BookCard from './BookCard';
 import api from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 
 const UserDashboard = () => {
   const [books, setBooks] = useState([]);
@@ -41,6 +42,7 @@ const UserDashboard = () => {
     lastname: '',
     username: '',
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAvailableBooks();
@@ -174,7 +176,10 @@ const UserDashboard = () => {
             }}
           />
         </Box>
-        <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+        <IconButton 
+          onClick={() => navigate('/user/profile')}
+          sx={{ ml: 2 }}
+        >
           <Avatar>{userProfile?.firstname?.[0] || 'U'}</Avatar>
         </IconButton>
       </Box>
@@ -190,111 +195,6 @@ const UserDashboard = () => {
           </Grid>
         ))}
       </Grid>
-
-      {/* Profile Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={() => setAnchorEl(null)}
-      >
-        <MenuItem onClick={() => {
-          setShowProfile(true);
-          setAnchorEl(null);
-        }}>
-          My Profile
-        </MenuItem>
-      </Menu>
-
-      {/* Profile Dialog */}
-      <Dialog
-        open={showProfile}
-        onClose={() => setShowProfile(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          My Profile
-        </DialogTitle>
-        <DialogContent>
-          <Tabs value={editProfile ? 1 : 0}>
-            <Tab label="Profile Info" />
-            <Tab label="Borrowed Books" />
-          </Tabs>
-
-          {!editProfile ? (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h6">Profile Information</Typography>
-              <Typography>First Name: {userProfile?.firstname}</Typography>
-              <Typography>Last Name: {userProfile?.lastname}</Typography>
-              <Typography>Username: {userProfile?.username}</Typography>
-              <Button
-                variant="contained"
-                sx={{ mt: 2 }}
-                onClick={() => setEditProfile(true)}
-              >
-                Edit Profile
-              </Button>
-            </Box>
-          ) : (
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                fullWidth
-                label="First Name"
-                value={profileData.firstname}
-                onChange={(e) => setProfileData({ ...profileData, firstname: e.target.value })}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="Last Name"
-                value={profileData.lastname}
-                onChange={(e) => setProfileData({ ...profileData, lastname: e.target.value })}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="Username"
-                value={profileData.username}
-                onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                sx={{ mb: 2 }}
-              />
-              <Button variant="contained" onClick={handleUpdateProfile} sx={{ mr: 1 }}>
-                Save
-              </Button>
-              <Button variant="outlined" onClick={() => setEditProfile(false)}>
-                Cancel
-              </Button>
-            </Box>
-          )}
-
-          {/* Borrowed Books Section */}
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6">Borrowed Books</Typography>
-            {borrowedBooks.map((borrowed) => (
-              <Paper key={borrowed.id} sx={{ p: 2, mt: 2 }}>
-                <Typography variant="subtitle1">{borrowed.book.title}</Typography>
-                <Typography variant="body2">Due Date: {borrowed.dueDate}</Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => handleReturn(borrowed.id)}
-                  sx={{ mt: 1 }}
-                >
-                  Return Book
-                </Button>
-              </Paper>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => {
-            setShowProfile(false);
-            setEditProfile(false);
-          }}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 };

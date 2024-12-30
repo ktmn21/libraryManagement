@@ -6,6 +6,7 @@ import Welcome from './components/common/Welcome';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import UserDashboard from './components/user/UserDashboard';
+import UserProfile from './components/user/UserProfile';
 import AdminDashboard from './components/admin/AdminDashboard';
 import PrivateRoute from './components/common/PrivateRoute';
 
@@ -18,22 +19,21 @@ function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route
-            path="/user/*"
-            element={
-              <PrivateRoute role="USER">
-                <UserDashboard />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin/*"
-            element={
-              <PrivateRoute role="ADMIN">
-                <AdminDashboard />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/user" element={
+            <PrivateRoute role="USER">
+              <UserDashboard />
+            </PrivateRoute>
+          } />
+          <Route path="/user/profile" element={
+            <PrivateRoute role="USER">
+              <UserProfile />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/*" element={
+            <PrivateRoute role="ADMIN">
+              <AdminDashboard />
+            </PrivateRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>
