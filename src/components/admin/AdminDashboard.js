@@ -151,16 +151,8 @@ const AdminDashboard = () => {
                           variant="contained"
                           color="primary"
                           onClick={() => navigate(`/admin/user/${user.id}`)}
-                          sx={{ mr: 1 }}
                         >
                           View Profile
-                        </Button>
-                        <Button
-                          variant="contained"
-                          color="error"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          Delete
                         </Button>
                       </TableCell>
                     </TableRow>
